@@ -1,0 +1,214 @@
+"""Recipe cost calculator - full working program
+Gets recipe name and serving size and ingredients
+with name, measurement, unit and cost
+Version 5 - improved layout of the output, allows fractions
+Created by Levi Ward
+2/09/2020
+"""
+
+
+# Function to get name / unit
+# checks it contains no digits and isn't blank
+def not_blank(question, number_check, blank_check, unit_name):
+    valid = False
+    response = ""
+
+    while not valid:  # loop will run until
+        # input within the required boundary is entered
+        number = False  # Initial assumption name contains no digits
+        response = input(question)
+        if number_check:  # if the name is to be checked for number
+            for letter in response:
+                if letter.isdigit():  # Tests for true - by default
+                    number = True
+            if number:  # if name / unit contains a number
+                print("{} cannot contain a number".format(unit_name))
+            elif not number and not blank_check:
+                # all required checks have been done
+                valid = True
+        if blank_check:  # if unit/name is to be checked for blank
+            if not response:  # if blank
+                print("Please enter a {}".format(unit_name))
+            elif response and not number_check:
+                # all required checks have been done
+                valid = True
+        if not number and response:  # if there are no numbers and not blank
+            valid = True  # all requirements are met
+    return response  # returns name / unit once all requirements are met
+
+
+# Number checking function
+def num_check(question):
+    error = "Enter a number that is more than 0"
+    valid = False
+    while not valid:  # While loop that will run until valid input is entered
+        try:
+            response = float(eval(input(question)))
+            if response <= 0:
+                print(error)
+            else:  # the input is a number and above 0
+                return response  # returns number and ends function
+        except ValueError:
+            print(error)
+        except NameError:
+            print(error)
+        except SyntaxError:
+            print(error)
+
+
+# function to ask user if they want to accept or cancel a option
+def cancel_accept(question):
+    list_ingredients = False
+    instruction = "press x then <enter> to cancel, or <enter> to accept: "
+    while not list_ingredients:
+        print(question)
+        get_list = input(instruction).lower()
+        if get_list == "x":
+            return False  # user has canceled option
+        elif not get_list:
+            return True  # user has accepted option
+        else:  # Invalid input, neither x nor <enter> has been entered
+            list_ingredients = False
+
+
+# function to check if user has used an abbreviated form of a unit
+# changes abbreviated unit to something more universally used
+def unit_abbreviations(unit):
+    # set up abbreviations dictionary
+    abbreviations_dict = {"tsp": ("t", "teaspoon", "teaspoons"),
+                          "tbsp": ("tbs", "tablespoon", "T", "tablespoons",),
+                          "oz": ("ounce", "fluid ounce", "fl oz", "ounces"),
+                          "cup": ("c", "Cup"),
+                          "pt": ("p", "fl pt", "pint", "pints"),
+                          "qt": ("q", "fl", "qt", "quart"),
+                          "ml": ("milliliter", "millilitre", "cc"),
+                          "L": ("liter", "litre", "liters", "litres"),
+                          "dl": ("deciliters", "decilitre", "deciliter"),
+                          "lb": ("pound", "lbs", "#", "pounds"),
+                          "g": ("gram", "grams", "gm"),
+                          "kg": ("Kilogram", "Kilograms", "kgs")
+                          }
+
+    for key, value in abbreviations_dict.items():  # loop to go through
+        # all the key's and their values
+        if unit in value or len(unit) > 1 and unit.lower() in value:
+            # if the unit entered by the user is in the tuple,
+            # inside the dictionary.
+            # also checks for if the unit in lower case is in the tuple,
+            # with the exception T and t.
+            if cancel_accept("Would you like to use the "
+                             "abbreviated version: {}?".format(key)):
+                return key
+            else:
+                return unit  # returns what the user entered
+    return unit
+
+
+# set up variable used for layout. used to print a line of '-'
+line_divider = 50 * '-'
+# set up list for ingredients
+ingredients = []
+# set up total cost variable
+total_cost = 0
+# set up scale factor variable
+scale_factor = 0
+# set up serving size variable
+serving_size = 0
+
+# Main Routine
+recipe_name = not_blank("What is the recipe name? ", True, True,
+                        "name")  # testing for
+# not blank and no numbers
+change_scale_factor = True
+while change_scale_factor:
+    print(line_divider)  # splits the recipe name from the serving
+    # sizes output with a line of '-'
+    # Get serving size
+    serving_size = num_check("What is the recipe serving size? ")
+    # Get desired number of servings
+    desired_size = num_check("How many servings are needed? ")
+    # Calculate scale factor
+    scale_factor = desired_size / serving_size
+    print("The scale factor for {} is {:.2f}"
+          .format(recipe_name, scale_factor))
+    # warns the user if the scale factor is less than 0.25 or more than 4
+    if scale_factor < 0.25:
+        print("\nWarning: This scale factor is very small and you \n"
+              "might struggle to accurately weigh the ingredients. \n"
+              "Please consider using a larger scale factor and "
+              "freezing the \n"
+              "left overs?")
+        change_scale_factor = cancel_accept("\nDo you want to "
+                                            "change your scale factor?")
+    elif scale_factor > 4:
+        print("\nWarning: This scale factor is quite large so you \n"
+              "might have issues mixing the bowl volumes and oven space.\n"
+              "Please consider using a smaller scale factor and making "
+              "more than one batch.")
+        change_scale_factor = cancel_accept("\nDo you want to change"
+                                            " your scale factor?")
+    else:  # if the scale factor is between 1/4 and 4
+        change_scale_factor = False  # while loop will end
+
+# get list of ingredients (name, amount, unit, cost)
+valid_list = False
+while not valid_list:  # starts loop until there are at least
+    # 2 valid ingredients
+    print(line_divider)
+    # get name of ingredient
+    ingredient_name = not_blank("Enter ingredient name: ",
+                                False, True, "name").title()
+    # calls the not_blank function and provides the question
+
+    # Get amounts
+    ingredient_amount = num_check("What is the amount of the ingredient? ")
+
+    # Get amount unit
+    ingredient_unit = not_blank("What is the unit? ", True, False, "unit")
+    ingredient_unit = unit_abbreviations(ingredient_unit)
+    # checks for abbreviations
+    # calculate scaled amounts for ingredients
+    scaled_ingredient = (ingredient_amount * scale_factor)
+
+    # Get original cost of ingredient
+    original_cost = num_check("what is the original "
+                              "cost of the {}? $".format(ingredient_name))
+
+    # Get original amount that was bought
+    original_amount = num_check("what was the original amount of {} "
+                                "that was bought? (in {}): ".
+                                format(ingredient_name, ingredient_unit))
+
+    # Find the cost ingredient being used in the recipe
+    scaled_cost = ((original_cost / original_amount) * scaled_ingredient)
+
+    # the cost of the ingredient gets added to the running total of the recipe
+    total_cost += scaled_cost
+
+    # add amount and ingredient name together in a list
+    ingredients.append("{} {:.2f} {} ${:.2f}".format(
+        ingredient_name, scaled_ingredient, ingredient_unit, scaled_cost))
+
+    # ask user if there are more ingredients
+    if not cancel_accept("\nWould you like to enter another ingredient?"):
+        if len(ingredients) < 2:  # check that list contains at least 2 items
+            print("Please enter at least two ingredients")
+        else:  # user does not wish to enter more ingredients
+            valid_list = True  # If list contains 2 items break out of loop
+
+# output total cost
+print(line_divider)
+print("The Total Cost of {} is: ${:.2f}".format(recipe_name, total_cost))
+
+# output serving cost
+print("The Cost for one serving is: ${:.2f}".format(total_cost / serving_size))
+print(line_divider)
+
+# ask user if they would like an in-depth list of ingredients and cost
+if cancel_accept("Would you like an in-depth list of"
+                 " each ingredient and its cost? "):
+    print(len(max(ingredients, key=len)) * "-")  # prints line of '-'
+    # the length of the longest ingredient
+    for item in ingredients:  # prints ingredients separately on each line
+        print(item)
+    print(len(max(ingredients, key=len)) * "-")
